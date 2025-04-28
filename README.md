@@ -1,8 +1,10 @@
 # Scheduler Plugin Demo
 
-## Golang
+## Pre knowledge
 
-### 接口
+### Golang
+
+#### 接口
 
 ```go
 // 定义接口
@@ -68,11 +70,11 @@ func main() {
 }
 ```
 
-### 继承
+#### 继承
 
 通过组合(composition)和接口(interface)来实现继承的功能
 
-#### composition
+###### composition
 
 ```go
 // 父结构体
@@ -102,7 +104,7 @@ func main() {
 }
 ```
 
-#### interface
+##### interface
 
 ```go
 // 定义接口
@@ -138,6 +140,10 @@ func main() {
     speaker.Speak() // 通过接口调用方法
 }
 ```
+
+### kubernetes operator
+
+
 
 ## 组合默认调度插件
 
@@ -463,6 +469,59 @@ profiles:
   实现的扩展点：`score`。
 
 > 更多内容参考官方文档 [调度器配置](https://kubernetes.io/zh-cn/docs/reference/scheduling/config/#scheduling-plugins) 和源码
+
+## 实践：Sticky pod
+
+### stickyjob crd
+
+定义 `stickyjob` 这个 crd：
+
+```yaml
+# stickyjob-crd.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  # 名字必需与下面的 spec 字段匹配
+  # 格式为 '<名称的复数形式>.<组名>'
+  name: stickyjobs.example.com
+spec:
+  # 组名称，用于 REST API：/apis/<组>/<版本>
+  group: example.com
+  # 列举此 CustomResourceDefinition 所支持的版本
+  versions:
+  - name: v1
+    # 每个版本都可以通过 served 标志来独立启用或禁止
+    served: true
+    # 其中一个且只有一个版本必需被标记为存储版本
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              template:
+                type: object      # 对应 PodTemplateSpec
+          status:
+            type: object
+            properties:
+              lastNode:
+                type: string      # 记录上次调度节点名
+    subresources:
+      status: {}
+  # spec.scope 可以是 Namespaced 或 Cluster
+  scope: Namespaced
+  names:
+    # 名称的复数形式，用于 URL：/apis/<组>/<版本>/<名称的复数形式>
+    plural: stickyjobs
+    # 名称的单数形式，作为命令行使用时和显示时的别名
+    singular: stickyjob
+    # kind 通常是单数形式的驼峰命名（CamelCased）形式。
+    kind: StickyJob
+```
+
+
 
 ## Reference
 
